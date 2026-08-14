@@ -54,6 +54,12 @@ fi
 # Ninja for the build
 which ninja >/dev/null 2>&1 || brew install ninja
 
+# Patch vulkan-loader GN: it only defines SYSCONFDIR/FALLBACK_* for
+# linux/chromeos/mac; iOS needs them too (ANGLE iOS upstream is Metal-only,
+# so this never ran there).
+sed -i '' 's/if (is_linux || is_chromeos || is_mac) {/if (is_linux || is_chromeos || is_mac || is_ios) {/' \
+    third_party/vulkan-loader/src/BUILD.gn
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
