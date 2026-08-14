@@ -62,6 +62,13 @@ sed -i '' \
     -e 's/if (is_mac) {/if (is_mac || is_ios) {/' \
     third_party/vulkan-loader/src/BUILD.gn
 
+# Enable the macOS-style Vulkan display/WSI on iOS: DisplayVkMac + WindowSurfaceVkMac
+# use only Foundation/QuartzCore (CAMetalLayer) + Metal, both available on iOS.
+sed -i '' 's/if (is_mac) {/if (is_mac || is_ios) {/' \
+    src/libANGLE/renderer/vulkan/vulkan_backend.gni
+sed -i '' 's|#import <Cocoa/Cocoa.h>|#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>|' \
+    src/libANGLE/renderer/vulkan/mac/DisplayVkMac.mm
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
