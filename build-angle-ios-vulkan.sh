@@ -57,7 +57,9 @@ which ninja >/dev/null 2>&1 || brew install ninja
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
-cd ..
+
+# NOTE: stay inside angle/ from here on — gn/ninja must run against the
+# gclient-synced checkout (which contains build/ etc.), not the fork root.
 
 # --- common GN args (Vulkan backend + MoltenVK) ---
 COMMON_ARGS='
@@ -112,11 +114,11 @@ rm -rf $OUT
 mkdir -p $OUT
 cp -R out/ios-vulkan-arm64/libEGL.framework $OUT/
 cp -R out/ios-vulkan-arm64/libGLESv2.framework $OUT/
-cp -R angle/include/EGL $OUT/include-EGL
-cp -R angle/include/GLES2 $OUT/include-GLES2
-cp -R angle/include/GLES3 $OUT/include-GLES3
-cp -R angle/include/KHR $OUT/include-KHR
-echo "$(git -C angle rev-parse HEAD)" > $OUT/commit.txt
+cp -R include/EGL $OUT/include-EGL
+cp -R include/GLES2 $OUT/include-GLES2
+cp -R include/GLES3 $OUT/include-GLES3
+cp -R include/KHR $OUT/include-KHR
+echo "$(git rev-parse HEAD)" > $OUT/commit.txt
 
 # Ad-hoc codesign the framework binaries (required for iOS sideload)
 for F in $OUT/libEGL.framework $OUT/libGLESv2.framework; do
