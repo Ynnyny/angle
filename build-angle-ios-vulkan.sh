@@ -64,10 +64,78 @@ sed -i '' \
 
 # Enable the macOS-style Vulkan display/WSI on iOS: DisplayVkMac + WindowSurfaceVkMac
 # use only Foundation/QuartzCore (CAMetalLayer) + Metal, both available on iOS.
-sed -i '' 's/if (is_mac) {/if (is_mac || is_ios) {/' \
-    src/libANGLE/renderer/vulkan/vulkan_backend.gni
-sed -i '' 's|#import <Cocoa/Cocoa.h>|#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>|' \
-    src/libANGLE/renderer/vulkan/mac/DisplayVkMac.mm
+# IOSurfaceSurfaceVkMac (EGL_IOSURFACE_ANGLE client buffers) stays macOS-only.
+python3 - <<'PYEOF'
+import re
+gni = 'src/libANGLE/renderer/vulkan/vulkan_backend.gni'
+s = open(gni).read()
+old = '''if (is_mac) {
+  vulkan_backend_sources += [
+    "mac/DisplayVkMac.h",
+    "mac/DisplayVkMac.mm",
+    "mac/IOSurfaceSurfaceVkMac.h",
+    "mac/IOSurfaceSurfaceVkMac.mm",
+    "mac/WindowSurfaceVkMac.h",
+    "mac/WindowSurfaceVkMac.mm",
+  ]
+}
+'''
+new = '''if (is_mac || is_ios) {
+  vulkan_backend_sources += [
+    "mac/DisplayVkMac.h",
+    "mac/DisplayVkMac.mm",
+    "mac/WindowSurfaceVkMac.h",
+    "mac/WindowSurfaceVkMac.mm",
+  ]
+}
+if (is_mac) {
+  vulkan_backend_sources += [
+    "mac/IOSurfaceSurfaceVkMac.h",
+    "mac/IOSurfaceSurfaceVkMac.mm",
+  ]
+}
+'''
+assert old in s, "vulkan_backend.gni block not found"
+open(gni, 'w').write(s.replace(old, new))
+
+mm = 'src/libANGLE/renderer/vulkan/mac/DisplayVkMac.mm'
+s = open(mm).read()
+s = s.replace('#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>',
+              '#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>\n#include <TargetConditionals.h>')
+s = s.replace('''#if TARGET_OS_IPHONE
+    return nullptr;
+#else
+    return new IOSurfaceSurfaceVkMac(state, clientBuffer, attribs, mRenderer);
+#endif''', '')  # idempotence guard
+s = s.replace('''    ASSERT(buftype == EGL_IOSURFACE_ANGLE);
+
+    return new IOSurfaceSurfaceVkMac(state, clientBuffer, attribs, mRenderer);''',
+'''    ASSERT(buftype == EGL_IOSURFACE_ANGLE);
+#if TARGET_OS_IPHONE
+    return nullptr;
+#else
+    return new IOSurfaceSurfaceVkMac(state, clientBuffer, attribs, mRenderer);
+#endif''')
+s = s.replace('''    if (!IOSurfaceSurfaceVkMac::ValidateAttributes(this, clientBuffer, attribs))
+    {
+        return egl::Error(EGL_BAD_ATTRIBUTE);
+    }''',
+'''#if !TARGET_OS_IPHONE
+    if (!IOSurfaceSurfaceVkMac::ValidateAttributes(this, clientBuffer, attribs))
+    {
+        return egl::Error(EGL_BAD_ATTRIBUTE);
+    }
+#endif''')
+s = s.replace('outExtensions->iosurfaceClientBuffer = true;',
+              '#if !TARGET_OS_IPHONE\n    outExtensions->iosurfaceClientBuffer = true;\n#endif')
+open(mm, 'w').write(s)
+
+h = 'src/libANGLE/renderer/vulkan/mac/WindowSurfaceVkMac.h'
+s = open(h).read()
+s = s.replace('#include <Cocoa/Cocoa.h>',
+              '#include <Foundation/Foundation.h>\n#include <QuartzCore/QuartzCore.h>')
+open(h, 'w').write(s)
+PYEOF
 
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
