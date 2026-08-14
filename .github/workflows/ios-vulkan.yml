@@ -1,0 +1,42 @@
+name: Build ANGLE iOS (Vulkan backend)
+
+on:
+  workflow_dispatch:
+    inputs:
+      angle_commit:
+        description: 'ANGLE commit hash to build (empty = latest main)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios-vulkan:
+    name: Build ANGLE (Vulkan) for iOS device arm64
+    runs-on: macos-15
+    timeout-minutes: 240
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Make Script Executable
+        run: chmod +x build-angle-ios-vulkan.sh
+
+      - name: Build ANGLE (Vulkan) for iOS
+        env:
+          ANGLE_COMMIT: ${{ github.event.inputs.angle_commit }}
+        run: ./build-angle-ios-vulkan.sh
+
+      - name: Verify Output
+        run: |
+          ls -la build/ios-vulkan/
+          file build/ios-vulkan/libEGL.framework/libEGL
+          otool -l build/ios-vulkan/libGLESv2.framework/libGLESv2 | grep -A1 LC_BUILD_VERSION | head -4
+
+      - name: Upload Archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: angle-ios-vulkan
+          path: build/ios-vulkan/
+          retention-days: 14
