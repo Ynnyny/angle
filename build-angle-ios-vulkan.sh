@@ -46,7 +46,13 @@ gclient sync --shallow --no-history --noprehooks
 # the solution is unmanaged.
 cipd ensure -root buildtools/mac \
     -ensure-file - <<< "gn/gn/mac-arm64 git_revision:4ac29005ff1dc3d8f34ceb9c1438e2db8c1b0888"
-ls -la buildtools/mac/gn/ || true
+if [ ! -x buildtools/mac/gn ]; then
+    echo "ERROR: gn binary missing at buildtools/mac/gn" >&2
+    exit 1
+fi
+
+# Ninja for the build
+which ninja >/dev/null 2>&1 || brew install ninja
 
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
@@ -91,7 +97,8 @@ COMMON_ARGS='
 
 # --- Build for iOS ARM64 device ---
 echo "Building ANGLE (Vulkan) for iOS ARM64 device..."
-gn gen out/ios-vulkan-arm64 --args="
+GN_BIN="$SCRIPT_DIR/angle/buildtools/mac/gn"
+"$GN_BIN" gen out/ios-vulkan-arm64 --args="
     target_os=\"ios\"
     target_cpu=\"arm64\"
     target_environment=\"device\"
