@@ -42,6 +42,12 @@ solutions = [
 EOL
 gclient sync --shallow --no-history --noprehooks
 
+# Install cipd deps explicitly (gn binary etc.); gclient skips deps_cipd when
+# the solution is unmanaged.
+cipd ensure -root buildtools/mac \
+    -ensure-file - <<< "gn/gn/mac-arm64 git_revision:4ac29005ff1dc3d8f34ceb9c1438e2db8c1b0888"
+ls -la buildtools/mac/gn/ || true
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
