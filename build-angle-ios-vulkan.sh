@@ -100,7 +100,9 @@ open(gni, 'w').write(s.replace(old, new))
 
 mm = 'src/libANGLE/renderer/vulkan/mac/DisplayVkMac.mm'
 s = open(mm).read()
-s = s.replace('#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>',
+s = s.replace('#import <Cocoa/Cocoa.h>',
+              '#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>\n#include <TargetConditionals.h>')
+s = s.replace('#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>\n#include <TargetConditionals.h>\n#include <TargetConditionals.h>',
               '#import <Foundation/Foundation.h>\n#import <QuartzCore/QuartzCore.h>\n#include <TargetConditionals.h>')
 s = s.replace('''#if TARGET_OS_IPHONE
     return nullptr;
@@ -135,6 +137,17 @@ s = open(h).read()
 s = s.replace('#include <Cocoa/Cocoa.h>',
               '#include <Foundation/Foundation.h>\n#include <QuartzCore/QuartzCore.h>')
 open(h, 'w').write(s)
+
+mmw = 'src/libANGLE/renderer/vulkan/mac/WindowSurfaceVkMac.mm'
+s = open(mmw).read()
+s = s.replace('#include <Metal/Metal.h>',
+              '#include <TargetConditionals.h>\n#include <Metal/Metal.h>')
+s = s.replace('''    mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+''', '''#if !TARGET_OS_IPHONE
+    mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+#endif
+''')
+open(mmw, 'w').write(s)
 PYEOF
 
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
