@@ -148,6 +148,27 @@ s = s.replace('''    mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALa
 #endif
 ''')
 open(mmw, 'w').write(s)
+
+# The Vulkan backend never links QuartzCore.framework (upstream gap; the
+# mac WSI files reference CALayer/CAMetalLayer ObjC classes).
+vk = 'src/libANGLE/renderer/vulkan/BUILD.gn'
+s = open(vk).read()
+old = '''  angle_source_set(target_name) {
+    sources = vulkan_backend_sources
+    libs = []
+    defines = []
+'''
+new = '''  angle_source_set(target_name) {
+    sources = vulkan_backend_sources
+    libs = []
+    frameworks = []
+    defines = []
+    if (is_apple) {
+      frameworks += [ "QuartzCore.framework" ]
+    }
+'''
+assert old in s, "vk BUILD.gn template not found"
+open(vk, 'w').write(s.replace(old, new))
 PYEOF
 
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
