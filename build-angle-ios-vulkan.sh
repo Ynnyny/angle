@@ -171,6 +171,25 @@ assert old in s, "vk BUILD.gn template not found"
 open(vk, 'w').write(s.replace(old, new))
 PYEOF
 
+# Force the provokingVertex feature on Apple. MoltenVK on pre-Metal-3 GPUs
+# (e.g. A11 / iPhone 8) reports provokingVertexLast=false, which makes ANGLE
+# cap maxSupportedESVersion at GLES 2.0 (RenderVk::getMaxSupportedESVersion)
+# and eglChooseConfig returns zero ES3 configs. The rasterizer pNext struct
+# ANGLE chains when the feature is enabled is not recognized by MoltenVK and
+# is ignored per the Vulkan pNext rules (provoking vertex stays at the GLES
+# default = first vertex convention), so this is safe.
+python3 - <<'PYEOF'
+src = 'src/libANGLE/renderer/vulkan/vk_renderer.cpp'
+s = open(src).read()
+old = """    ANGLE_FEATURE_CONDITION(&mFeatures, provokingVertex,
+                            mProvokingVertexFeatures.provokingVertexLast == VK_TRUE);"""
+new = """    ANGLE_FEATURE_CONDITION(&mFeatures, provokingVertex,
+                            true);"""
+assert old in s, "provokingVertex feature condition not found"
+open(src, 'w').write(s.replace(old, new))
+print("patched: provokingVertex forced on")
+PYEOF
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
