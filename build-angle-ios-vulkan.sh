@@ -5,7 +5,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
 # --- depot_tools ---
-export DEPOT_TOOLS_UPDATE=0
 if [ ! -d "depot_tools" ]; then
     git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 elif [ -d "depot_tools/.git" ]; then
