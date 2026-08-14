@@ -171,23 +171,44 @@ assert old in s, "vk BUILD.gn template not found"
 open(vk, 'w').write(s.replace(old, new))
 PYEOF
 
-# Force the provokingVertex feature on Apple. MoltenVK on pre-Metal-3 GPUs
-# (e.g. A11 / iPhone 8) reports provokingVertexLast=false, which makes ANGLE
-# cap maxSupportedESVersion at GLES 2.0 (RenderVk::getMaxSupportedESVersion)
-# and eglChooseConfig returns zero ES3 configs. The rasterizer pNext struct
-# ANGLE chains when the feature is enabled is not recognized by MoltenVK and
-# is ignored per the Vulkan pNext rules (provoking vertex stays at the GLES
-# default = first vertex convention), so this is safe.
+# Remove the GLES 2.0 version cap that ANGLE imposes when provoking vertex
+# is unavailable. MoltenVK on pre-Metal-3 GPUs (e.g. A11 / iPhone 8) reports
+# provokingVertexLast=false, which made RenderVk::getMaxSupportedESVersion
+# cap at GLES 2.0 and eglChooseConfig return zero ES3 configs. Without the
+# extension ANGLE just keeps the Vulkan/GLES default first-vertex convention
+# (spec-correct flat shading), so dropping the cap is safe. The feature is
+# NOT forced on: on Metal-3 GPUs the extension still gets enabled as usual,
+# and on devices without it ANGLE never touches VK_EXT_provoking_vertex at
+# device creation (forcing it would risk vkCreateDevice failing with
+# VK_ERROR_EXTENSION_NOT_PRESENT).
 python3 - <<'PYEOF'
 src = 'src/libANGLE/renderer/vulkan/vk_renderer.cpp'
 s = open(src).read()
-old = """    ANGLE_FEATURE_CONDITION(&mFeatures, provokingVertex,
-                            mProvokingVertexFeatures.provokingVertexLast == VK_TRUE);"""
-new = """    ANGLE_FEATURE_CONDITION(&mFeatures, provokingVertex,
-                            true);"""
-assert old in s, "provokingVertex feature condition not found"
+old = """    // Limit to ES2.0 if there are any blockers for 3.0.
+
+    // VK_EXT_provoking_vertex is required for flat shading.
+    if (!mFeatures.provokingVertex.enabled)
+    {
+        maxVersion = LimitVersionTo(maxVersion, {2, 0});
+    }
+"""
+new = """    // Limit to ES2.0 if there are any blockers for 3.0.
+
+    // NOTE(apple): VK_EXT_provoking_vertex is unavailable on pre-Metal-3
+    // GPUs (A11/MoltenVK). When it is missing ANGLE keeps the GLES-default
+    // first-vertex convention, which is spec-correct, so the GLES 2.0 cap is
+    // intentionally removed for Apple.
+#if !defined(ANGLE_PLATFORM_APPLE)
+    // VK_EXT_provoking_vertex is required for flat shading.
+    if (!mFeatures.provokingVertex.enabled)
+    {
+        maxVersion = LimitVersionTo(maxVersion, {2, 0});
+    }
+#endif
+"""
+assert old in s, "provokingVertex ES2 cap not found"
 open(src, 'w').write(s.replace(old, new))
-print("patched: provokingVertex forced on")
+print("patched: dropping ES2 cap for Apple when provokingVertex unavailable")
 PYEOF
 
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
