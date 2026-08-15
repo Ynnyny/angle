@@ -352,6 +352,20 @@ bool ValidateES3TexImageParametersBase(const Context *context,
                                        const void *pixels,
                                        GLuint *outImageSize)
 {
+    // NOTE(apple): Normalize desktop-GL unsized depth internal formats to their sized ES3
+    // equivalents. Minecraft 26.x (desktop GL backend) passes GL_DEPTH_COMPONENT32 (0x81A7)
+    // with GL_DEPTH_COMPONENT/GL_FLOAT for its depth attachments, which ES 3.x validation
+    // rejects. Without this, glTexImage2D fails with GL_INVALID_OPERATION on ANGLE ES3
+    // (e.g. via the MobileGlues renderer which drives ANGLE directly).
+    if (internalformat == GL_DEPTH_COMPONENT32_OES)
+    {
+        internalformat = (type == GL_UNSIGNED_INT) ? GL_DEPTH_COMPONENT24 : GL_DEPTH_COMPONENT32F;
+    }
+    else if (internalformat == GL_DEPTH_STENCIL)
+    {
+        internalformat = GL_DEPTH24_STENCIL8;
+    }
+
     TextureType texType = TextureTargetToType(target);
 
     if (gl::IsYuvFormat(format))

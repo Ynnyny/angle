@@ -246,6 +246,45 @@ open(src, 'w').write(s.replace(old, new))
 print("patched: disabling useVertexInputBindingStrideDynamicState on Apple")
 PYEOF
 
+# Accept desktop-GL unsized depth internal formats in ES3 texImage validation.
+# Minecraft 26.x (desktop GL backend) passes GL_DEPTH_COMPONENT32 (0x81A7, GL_DEPTH_COMPONENT32_OES) with
+# GL_DEPTH_COMPONENT/GL_FLOAT for depth attachments; ES3 validation rejects it
+# with GL_INVALID_OPERATION (crash "OpenGL error 1282" on depth texture alloc
+# when driving ANGLE directly, e.g. via the MobileGlues renderer). Normalize to
+# GL_DEPTH_COMPONENT32F (or 24 when type is UNSIGNED_INT) and DEPTH_STENCIL to
+# GL_DEPTH24_STENCIL8.
+python3 - <<'PYEOF'
+src = 'src/libANGLE/validationES3.cpp'
+s = open(src).read()
+old = """                                       const void *pixels,
+                                       GLuint *outImageSize)
+{
+    TextureType texType = TextureTargetToType(target);
+"""
+new = """                                       const void *pixels,
+                                       GLuint *outImageSize)
+{
+    // NOTE(apple): Normalize desktop-GL unsized depth internal formats to their sized ES3
+    // equivalents. Minecraft 26.x (desktop GL backend) passes GL_DEPTH_COMPONENT32 (0x81A7, GL_DEPTH_COMPONENT32_OES)
+    // with GL_DEPTH_COMPONENT/GL_FLOAT for its depth attachments, which ES 3.x validation
+    // rejects. Without this, glTexImage2D fails with GL_INVALID_OPERATION on ANGLE ES3
+    // (e.g. via the MobileGlues renderer which drives ANGLE directly).
+    if (internalformat == GL_DEPTH_COMPONENT32_OES)
+    {
+        internalformat = (type == GL_UNSIGNED_INT) ? GL_DEPTH_COMPONENT24 : GL_DEPTH_COMPONENT32F;
+    }
+    else if (internalformat == GL_DEPTH_STENCIL)
+    {
+        internalformat = GL_DEPTH24_STENCIL8;
+    }
+
+    TextureType texType = TextureTargetToType(target);
+"""
+assert old in s, "ValidateES3TexImageParametersBase header not found"
+open(src, 'w').write(s.replace(old, new))
+print("patched: accepting unsized GL_DEPTH_COMPONENT32 in ES3 texImage validation")
+PYEOF
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
