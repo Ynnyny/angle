@@ -35,17 +35,33 @@ angle::Result WindowSurfaceVkMac::createSurfaceVk(vk::ErrorContext *context)
 
     CALayer *layer = reinterpret_cast<CALayer *>(mNativeWindowType);
 
-    mMetalLayer        = [[CAMetalLayer alloc] init];
-    mMetalLayer.frame  = CGRectMake(0, 0, layer.frame.size.width, layer.frame.size.height);
+    // NOTE(apple/ios): If the native window type is already a CAMetalLayer,
+    // render into it directly instead of wrapping it in a brand-new sublayer.
+    // A CAMetalLayer created and attached from the GL thread (the layer tree
+    // is owned by the main thread) can end up ignored by the window server,
+    // so drawables presented on it never reach the display (black screen).
+    // This mirrors the Metal backend (SurfaceMtl.mm), which uses the caller's
+    // layer directly whenever it is one. On iOS EGL window surfaces are
+    // typically the CALayer itself; the sublayer path stays for NSView-style
+    // windows (macOS).
+    if ([layer isKindOfClass:[CAMetalLayer class]])
+    {
+        mMetalLayer = static_cast<CAMetalLayer *>(layer);
+        [mMetalLayer retain];
+    }
+    else
+    {
+        mMetalLayer        = [[CAMetalLayer alloc] init];
+        mMetalLayer.frame  = CGRectMake(0, 0, layer.frame.size.width, layer.frame.size.height);
+        mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+        [layer addSublayer:mMetalLayer];
+    }
     mMetalLayer.device = mMetalDevice;
     mMetalLayer.drawableSize =
         CGSizeMake(mMetalLayer.bounds.size.width * mMetalLayer.contentsScale,
                    mMetalLayer.bounds.size.height * mMetalLayer.contentsScale);
     mMetalLayer.framebufferOnly  = NO;
-    mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
     mMetalLayer.contentsScale    = layer.contentsScale;
-
-    [layer addSublayer:mMetalLayer];
 
     VkMetalSurfaceCreateInfoEXT createInfo = {};
     createInfo.sType                       = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
