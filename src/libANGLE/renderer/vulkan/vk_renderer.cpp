@@ -6382,10 +6382,14 @@ void Renderer::initFeatures(const vk::ExtensionNameList &deviceExtensionNames,
     const bool isVertexInputBindingStrideBuggy =
         (IsWindows() && isIntel && driverVersion < angle::VersionTriple(100, 9684, 0)) ||
         (isARMProprietary && driverVersion < angle::VersionTriple(48, 0, 0));
+    // MoltenVK reports VK_EXT_extended_dynamic_state's vertexInputBindingStride feature as
+    // available even when the platform cannot honor it (it requires macOS 14.0/iOS 17.0 plus an
+    // Apple4/Mac2 GPU), and then silently ignores the request at vkCreateDevice time. The stride
+    // ends up never applied, producing garbled vertex input and a black screen.
     ANGLE_FEATURE_CONDITION(&mFeatures, useVertexInputBindingStrideDynamicState,
                             mFeatures.supportsExtendedDynamicState.enabled &&
                                 !mFeatures.supportsVertexInputDynamicState.enabled &&
-                                !isVertexInputBindingStrideBuggy);
+                                !isVertexInputBindingStrideBuggy && !IsApple());
     // On ARM proprietary drivers prior to r52, |vkCmdSetCullMode| incorrectly culls non-triangle
     // topologies, according to the errata:
     // https://developer.arm.com/documentation/SDEN-3735689/0100/?lang=en
