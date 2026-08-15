@@ -211,6 +211,41 @@ open(src, 'w').write(s.replace(old, new))
 print("patched: dropping ES2 cap for Apple when provokingVertex unavailable")
 PYEOF
 
+# Disable useVertexInputBindingStrideDynamicState on Apple. MoltenVK reports
+# VK_EXT_extended_dynamic_state's vertexInputBindingStride feature as
+# available even when the platform cannot honor it (requires macOS 14.0/iOS
+# 17.0 plus Apple4/Mac2 GPU), then silently drops the request at vkCreateDevice
+# time. The stride is never applied, producing garbled vertex input and a
+# black screen on older devices (e.g. A11 on iOS 16).
+python3 - <<'PYEOF'
+src = 'src/libANGLE/renderer/vulkan/vk_renderer.cpp'
+s = open(src).read()
+old = """    const bool isVertexInputBindingStrideBuggy =
+        (IsWindows() && isIntel && driverVersion < angle::VersionTriple(100, 9684, 0)) ||
+        (isARMProprietary && driverVersion < angle::VersionTriple(48, 0, 0));
+    ANGLE_FEATURE_CONDITION(&mFeatures, useVertexInputBindingStrideDynamicState,
+                            mFeatures.supportsExtendedDynamicState.enabled &&
+                                !mFeatures.supportsVertexInputDynamicState.enabled &&
+                                !isVertexInputBindingStrideBuggy);
+"""
+new = """    const bool isVertexInputBindingStrideBuggy =
+        (IsWindows() && isIntel && driverVersion < angle::VersionTriple(100, 9684, 0)) ||
+        (isARMProprietary && driverVersion < angle::VersionTriple(48, 0, 0));
+    // MoltenVK reports EXT_extended_dynamic_state's vertexInputBindingStride
+    // feature as available even when the platform cannot honor it (needs macOS
+    // 14.0/iOS 17.0 plus Apple4/Mac2 GPU), then silently drops the request at
+    // vkCreateDevice time: the stride is never applied, producing garbled
+    // vertex input and a black screen on older devices (e.g. A11 on iOS 16).
+    ANGLE_FEATURE_CONDITION(&mFeatures, useVertexInputBindingStrideDynamicState,
+                            mFeatures.supportsExtendedDynamicState.enabled &&
+                                !mFeatures.supportsVertexInputDynamicState.enabled &&
+                                !isVertexInputBindingStrideBuggy && !IsApple());
+"""
+assert old in s, "useVertexInputBindingStrideDynamicState condition not found"
+open(src, 'w').write(s.replace(old, new))
+print("patched: disabling useVertexInputBindingStrideDynamicState on Apple")
+PYEOF
+
 CURRENT_ANGLE_COMMIT=$(git rev-parse HEAD)
 echo "Current ANGLE commit: $CURRENT_ANGLE_COMMIT"
 echo "$CURRENT_ANGLE_COMMIT" > ../.angle_commit
