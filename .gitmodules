@@ -78,10 +78,6 @@
 	path = third_party/flatbuffers/src
 	url = https://chromium.googlesource.com/external/github.com/google/flatbuffers
 	gclient-condition = checkout_android and not build_with_chromium
-[submodule "third_party/gles1_conform"]
-	path = third_party/gles1_conform
-	url = https://chrome-internal.googlesource.com/angle/es-cts
-	gclient-condition = checkout_angle_internal
 [submodule "third_party/glmark2/src"]
 	path = third_party/glmark2/src
 	url = https://chromium.googlesource.com/external/github.com/glmark2/glmark2

@@ -833,12 +833,6 @@ deps = {
       'dep_type': 'cipd',
   },
 
-  # Closed-source OpenGL ES 1.1 Conformance tests.
-  'third_party/gles1_conform': {
-    'url': Var('chrome_internal_git') + '/angle/es-cts.git@dc9f502f709c9cd88d7f8d3974f1c77aa246958e',
-    'condition': 'checkout_angle_internal',
-  },
-
   # glmark2 is a GPL3-licensed OpenGL ES 2.0 benchmark. We use it for testing.
   'third_party/glmark2/src': {
     'url': Var('chromium_git') + '/external/github.com/glmark2/glmark2@6edcf02205fd1e8979dc3f3964257a81959b80c8',
