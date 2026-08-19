@@ -16,7 +16,9 @@
 #include "libANGLE/renderer/vulkan/vk_caps_utils.h"
 #include "libANGLE/renderer/vulkan/vk_renderer.h"
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
+#import <QuartzCore/QuartzCore.h>
+#include <TargetConditionals.h>
 
 namespace rx
 {
@@ -42,8 +44,11 @@ SurfaceImpl *DisplayVkMac::createPbufferFromClientBuffer(const egl::SurfaceState
                                                          const egl::AttributeMap &attribs)
 {
     ASSERT(buftype == EGL_IOSURFACE_ANGLE);
-
+#if TARGET_OS_IPHONE
+    return nullptr;
+#else
     return new IOSurfaceSurfaceVkMac(state, clientBuffer, attribs, mRenderer);
+#endif
 }
 
 egl::ConfigSet DisplayVkMac::generateConfigs()
@@ -75,7 +80,9 @@ DisplayImpl *CreateVulkanMacDisplay(const egl::DisplayState &state)
 
 void DisplayVkMac::generateExtensions(egl::DisplayExtensions *outExtensions) const
 {
+    #if !TARGET_OS_IPHONE
     outExtensions->iosurfaceClientBuffer = true;
+#endif
 
     DisplayVk::generateExtensions(outExtensions);
 }
@@ -87,10 +94,12 @@ egl::Error DisplayVkMac::validateClientBuffer(const egl::Config *configuration,
 {
     ASSERT(buftype == EGL_IOSURFACE_ANGLE);
 
+#if !TARGET_OS_IPHONE
     if (!IOSurfaceSurfaceVkMac::ValidateAttributes(this, clientBuffer, attribs))
     {
         return egl::Error(EGL_BAD_ATTRIBUTE);
     }
+#endif
     return egl::NoError();
 }
 

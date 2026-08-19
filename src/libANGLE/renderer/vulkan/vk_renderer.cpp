@@ -5262,11 +5262,17 @@ gl::Version Renderer::getMaxSupportedESVersion() const
 
     // Limit to ES2.0 if there are any blockers for 3.0.
 
+    // NOTE(apple): VK_EXT_provoking_vertex is unavailable on pre-Metal-3
+    // GPUs (A11/MoltenVK). When it is missing ANGLE keeps the GLES-default
+    // first-vertex convention, which is spec-correct, so the GLES 2.0 cap is
+    // intentionally removed for Apple.
+#if !defined(ANGLE_PLATFORM_APPLE)
     // VK_EXT_provoking_vertex is required for flat shading.
     if (!mFeatures.provokingVertex.enabled)
     {
         maxVersion = LimitVersionTo(maxVersion, {2, 0});
     }
+#endif
 
     // Multisample textures (ES3.1) and multisample renderbuffers (ES3.0) require the Vulkan driver
     // to support the standard sample locations (in order to pass dEQP tests that check these

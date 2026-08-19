@@ -12,7 +12,8 @@
 
 #include "libANGLE/renderer/vulkan/SurfaceVk.h"
 
-#include <Cocoa/Cocoa.h>
+#include <Foundation/Foundation.h>
+#include <QuartzCore/QuartzCore.h>
 
 namespace rx
 {

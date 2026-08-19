@@ -129,7 +129,11 @@ template("angle_vulkan_backend_template") {
   angle_source_set(target_name) {
     sources = vulkan_backend_sources
     libs = []
+    frameworks = []
     defines = []
+    if (is_apple) {
+      frameworks += [ "QuartzCore.framework" ]
+    }
     deps = [
       ":angle_vk_mem_alloc_wrapper",
       "$angle_root:angle_abseil",

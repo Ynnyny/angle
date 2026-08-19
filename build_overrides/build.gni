@@ -8,6 +8,8 @@ declare_args() {
 
   use_system_xcode = ""
 
+  generate_location_tags = false
+
   # If true, it assumes that //third_party/abseil-cpp is an available
   # dependency for googletest.
   gtest_enable_absl_printers = false

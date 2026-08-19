@@ -9,6 +9,7 @@
 
 #include "libANGLE/renderer/vulkan/mac/WindowSurfaceVkMac.h"
 
+#include <TargetConditionals.h>
 #include <Metal/Metal.h>
 #include <QuartzCore/CAMetalLayer.h>
 
@@ -53,7 +54,9 @@ angle::Result WindowSurfaceVkMac::createSurfaceVk(vk::ErrorContext *context)
     {
         mMetalLayer        = [[CAMetalLayer alloc] init];
         mMetalLayer.frame  = CGRectMake(0, 0, layer.frame.size.width, layer.frame.size.height);
-        mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+    #if !TARGET_OS_IPHONE
+    mMetalLayer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+#endif
         [layer addSublayer:mMetalLayer];
     }
     mMetalLayer.device = mMetalDevice;

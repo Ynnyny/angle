@@ -771,10 +771,6 @@ deps = {
     'condition': 'not build_with_chromium',
   },
 
-  'third_party/catapult': {
-    'url': Var('chromium_git') + '/catapult.git' + '@' + Var('catapult_revision'),
-    'condition': 'not build_with_chromium',
-  },
 
   # Cherry is a dEQP/VK-GL-CTS management GUI written in Go. We use it for viewing test results.
   'third_party/cherry': {
@@ -798,10 +794,6 @@ deps = {
   },
 
 
-  'third_party/dawn': {
-    'url': Var('dawn_git') + '/dawn.git' + '@' +  Var('dawn_revision'),
-    'condition': 'checkout_angle_dawn_deps and not build_with_chromium'
-  },
 
   'third_party/depot_tools': {
     'url': Var('chromium_git') + '/chromium/tools/depot_tools.git@c55f47acb2cfd98f5b522541140d8844e4f0a2e6',
@@ -862,10 +854,6 @@ deps = {
     'condition': 'checkout_android and not build_with_chromium',
   },
 
-  'third_party/libdrm/src': {
-    'url': Var('chromium_git') + '/chromiumos/third_party/libdrm.git@369990d9660a387f618d0eedc341eb285016243b',
-    'condition': 'checkout_angle_mesa or not build_with_chromium',
-  },
 
   # libjpeg_turbo is used by glmark2.
   'third_party/libjpeg_turbo': {
@@ -873,10 +861,6 @@ deps = {
     'condition': 'not build_with_chromium',
   },
 
-  'third_party/libpng/src': {
-    'url': Var('android_git') + '/platform/external/libpng@8cc222cd3e79fa5190f3aa039a03a4cbea6cfbe7',
-    'condition': 'not build_with_chromium',
-  },
 
   'third_party/llvm/src': {
     'url': Var('chromium_git') + '/external/github.com/llvm/llvm-project@67790d3fb06b184b7be9c4d3e36ab01f0ac4198e',
@@ -1220,10 +1204,6 @@ deps = {
     'condition': 'checkout_android and not build_with_chromium',
   },
 
-  'third_party/SwiftShader': {
-    'url': Var('swiftshader_git') + '/SwiftShader@6b8d31709ad185dbd64e80865e830a9dbe8e7559',
-    'condition': 'not build_with_chromium',
-  },
 
   'third_party/turbine/cipd': {
       'packages': [
@@ -1236,9 +1216,6 @@ deps = {
       'dep_type': 'cipd',
   },
 
-  'third_party/VK-GL-CTS/src': {
-    'url': Var('chromium_git') + '/external/github.com/KhronosGroup/VK-GL-CTS' + '@' + Var('vk_gl_cts_revision'),
-  },
 
   'third_party/vulkan-deps': {
     'url': Var('chromium_git') + '/vulkan-deps@3956868af9e373dc7e0aeecae157eaf4a2e438d0',
